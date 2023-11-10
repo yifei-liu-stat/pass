@@ -2,6 +2,8 @@
 Calculation of FID score based on Inception model. Code is adapted from:
 - https://github.com/mseitzer/pytorch-fid, and
 - https://www.kaggle.com/code/ibtesama/gan-in-pytorch-with-fid/notebook#Fretchet-Inception-Distance
+
+Note: `FrechetInceptionDistance` from `torchmetrics` can be used to calculate FID score as well.
 """
 
 

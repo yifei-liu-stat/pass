@@ -14,6 +14,9 @@ torchvision = {url = "https://download.pytorch.org/whl/cu102/torchvision-0.13.1%
 denoising-diffusion-pytorch = {git = "https://github.com/yifei-liu-stat/denoising-diffusion-pytorch.git"}
 matplotlib = "^3.8.1"
 gdown = "^4.7.1"
+diffusers = "0.15.0"
+torchmetrics = {extras = ["image"], version = "^1.2.0"}
+transformers = "4.27.4"
 
 
 

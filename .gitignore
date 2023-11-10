@@ -2,8 +2,13 @@
 assess_generators/ckpt/**/*
 assess_generators/data/*
 
-assess_generators/results/**/*.png
-assess_generators/results/competitor_pvalue_dict.pkl
-assess_generators/results/competitor_score_dict.pkl
+# assess_generators/results/**/*.png
+# assess_generators/results/competitor_pvalue_dict.pkl
+# assess_generators/results/competitor_score_dict.pkl
 
 assess_generators/denoising-diffusion-pytorch/**/*
+
+
+
+multimodal_inference/data/**/*
+
