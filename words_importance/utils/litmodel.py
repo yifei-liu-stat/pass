@@ -2,6 +2,8 @@ import numpy as np
 
 import torch
 from torch import nn
+import torch.nn.functional as F
+
 
 
 import pytorch_lightning as pl
@@ -12,11 +14,11 @@ import pyro.distributions as dist
 import pyro.distributions.transforms as T
 
 import os
+import sys
 
-try:
-    from visualization import pairwise_bertembeddings
-except:
-    from utils.visualization import pairwise_bertembeddings
+sys.path.insert(0, "./utils")
+from visualization import pairwise_bertembeddings
+
 
 
 class litDistillBERT(pl.LightningModule):
@@ -89,6 +91,7 @@ class NF_affine_cond(nn.Module):
     def __init__(self, input_dim, context_dim, num_flow_layers, num_hidden_units):
         super().__init__()
         # Use conditional affine coupling layer to incorporate class label infomation
+        # Note: attribute name is spline_coupling, but this class is actually implementing affine_coupling
         self.spline_coupling = nn.ModuleList(
             [
                 T.conditional_affine_coupling(
@@ -280,6 +283,70 @@ class litNFAffine(pl.LightningModule):
         )
 
         return fig_pos, fig_neg
+
+
+class ClassificationHead(nn.Module):
+    def __init__(self, input_dim = 768, n_classes = 2, hidden_units = [1024, 512], dropout_rate = 0.3):
+        super().__init__()
+        layers = []
+        for output_dim in hidden_units:
+            layers.append(nn.Linear(input_dim, output_dim))
+            layers.append(nn.ReLU())
+            layers.append(nn.Dropout(p = dropout_rate))
+            input_dim = output_dim
+        
+        layers.append(nn.Linear(input_dim, n_classes))
+        layers.append(nn.LogSoftmax(dim = 1))
+        self.layers = nn.ModuleList(layers)
+    
+    def forward(self, batch):
+        for layer in self.layers:
+            batch = layer(batch)
+        return batch
+
+
+
+class litCLSHead(pl.LightningModule):
+    def __init__(self, model, lr):
+        super().__init__()
+        self.model = model
+        self.lr = lr
+    
+    def training_step(self, batch, batch_idx):
+        embeddings, targets = batch
+        outputs = self.model(embeddings)
+        loss = F.nll_loss(outputs, targets)
+        
+        preds = outputs.argmax(dim = 1, keepdim = True)
+        acc = preds.eq(targets.view_as(preds)).sum().item() / len(preds)
+        self.log('train_loss', loss, on_epoch = True, on_step = False, prog_bar = True)
+        self.log('train_acc', acc, on_epoch = True, on_step = False, prog_bar = True)
+        
+        return loss
+    
+    def validation_step(self, batch, batch_idx):
+        embeddings, targets = batch
+        outputs = self.model(embeddings)
+        loss = F.nll_loss(outputs, targets)
+        
+        preds = outputs.argmax(dim = 1, keepdim = True)
+        correct_preds = preds.eq(targets.view_as(preds)).sum().item()
+        acc = correct_preds / len(preds)
+        self.log('val_loss', loss, on_epoch = True, on_step = False, prog_bar = True)
+        self.log('val_acc', acc, on_epoch = True, on_step = False, prog_bar = True)
+    
+    def predict_step(self, batch, batch_idx):
+        embeddings, targets = batch
+        outputs = self.model(embeddings)
+        losses = F.nll_loss(outputs, targets, reduction = "none") # get the nll losses for each sample
+        return losses
+    
+    def configure_optimizers(self):
+        optimizer = torch.optim.Adam(self.parameters(), lr = self.lr)
+        return optimizer
+
+
+
 
 
 class CustomWriter(BasePredictionWriter):

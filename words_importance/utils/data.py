@@ -1,9 +1,25 @@
+import numpy as np
+
 import torch
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import (
+    Dataset,
+    DataLoader,
+    Subset,
+    random_split,
+)
+
+import pytorch_lightning as pl
+from pytorch_lightning.callbacks import ModelCheckpoint
+
 
 import os
 from copy import deepcopy
 import pickle
+import shutil
+
+import sys
+sys.path.insert(0, "./utils")
+from litmodel import litCLSHead, ClassificationHead
 
 
 class IMDBdataset(Dataset):
@@ -203,3 +219,79 @@ def process_distillbert_embedding(save_path):
     targets = torch.cat(targets, dim=0)
     idxs = torch.cat(idxs, dim=0)
     return embeddings, targets, idxs
+
+
+
+
+def get_cls_inf_dls(embeddings, targets, cls_idx, inf_idx, cls_bs):
+    """get cls and inf dataloaders from a full-size embeddings-targets (50,000), based on pre-specified split indices"""
+    ds = IMDBembedding(embeddings = embeddings, sentiments = targets, onehot = False)    
+    ds_cls, ds_inf = Subset(ds, cls_idx), Subset(ds, inf_idx)
+    
+    dl_cls = DataLoader(ds_cls, batch_size = cls_bs, pin_memory = True, shuffle = True)
+    dl_inf = DataLoader(ds_inf, batch_size = len(inf_idx), pin_memory = True, shuffle = False)
+    return dl_cls, dl_inf
+
+
+def sample_cls_inf_dls_from_flow(model, cls_size, inf_size, cls_bs):
+    total_size = cls_size + inf_size
+    embeddings, targets = model.sample_joint(sample_size = total_size)
+    ds = IMDBembedding(embeddings = embeddings, sentiments = targets, onehot = False)    
+    ds_cls, ds_inf = random_split(ds, [cls_size, inf_size])
+    
+    dl_cls = DataLoader(ds_cls, batch_size = cls_bs, pin_memory = True, shuffle = True)
+    dl_inf = DataLoader(ds_inf, batch_size = inf_size, pin_memory = True, shuffle = False)
+    return dl_cls, dl_inf
+
+
+
+
+def get_nll_losses(dl_cls, dl_inf, senti_word, temp_ckpt_dir, ebd_dimension=768, lr=5e-5, epochs=50, device_ids=[0]):
+    """
+    Get CE loss on each instance of inference sample, based on classifier trained on cls sample
+    1. both embeddings and targets will be splitted correspondingly based on global varialbes flow_idx, cls_idx, inf_idx
+    2. classification heads will be trained on cls_sample, and test statistic will be calculated on inf_sample
+    """
+    model = ClassificationHead(
+        input_dim = ebd_dimension,
+        n_classes = 2,
+        hidden_units = [1024, 512],
+        dropout_rate = 0.3
+    )
+    litmodel = litCLSHead(model, lr)
+    
+    checkpoint_callback = ModelCheckpoint(
+        dirpath = os.path.join(temp_ckpt_dir, senti_word),
+        filename = 'checkpointname-{val_loss:.4f}.ckpt',
+        save_top_k = 1,
+        mode = 'min',
+        monitor = 'val_loss'
+    )
+    
+    trainer = pl.Trainer(
+        max_epochs = epochs, 
+        accelerator = 'gpu',
+        devices = device_ids,
+        callbacks = [checkpoint_callback],
+        logger = False
+    )
+    
+    trainer.fit(litmodel, dl_cls, dl_inf)
+    nll_losses = trainer.predict(litmodel, dl_inf)
+    
+    shutil.rmtree(temp_ckpt_dir) # remove the checkpoint folder to reduce memory and avoid future confusion
+    return nll_losses[0]
+
+
+def get_test_stat(dl_cls0, dl_inf0, dl_cls1, dl_inf1, inf_size, senti_word, **kwargs):
+    """
+    Get test statistic based on alternative data (1) and null data (0)
+    1. if test statistic is significantly > 0, it means that we should reject the null, meaning that the collection of sentiment words matters signifcantly
+    """
+    losses_alternative = get_nll_losses(dl_cls1, dl_inf1, senti_word = senti_word, **kwargs)
+    losses_none = get_nll_losses(dl_cls0, dl_inf0, senti_word = "none", **kwargs)
+    diff = losses_alternative - losses_none
+    test_stat = np.sqrt(inf_size) * diff.mean() / diff.std()
+    return test_stat
+
+

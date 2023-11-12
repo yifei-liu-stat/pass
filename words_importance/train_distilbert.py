@@ -5,7 +5,7 @@ Fine-tune DistilBERT to perform sentiment classification on IMDB review dataset 
 - att_mats_pooled.pt
 which can all be obtained by running `python prepare.py` in the `words_importance` directory.
 
-Checkpoints will be saved in specified checkpoint folder.
+Checkpoints will be saved in specified checkpoint folder, default is `./ckpt/ckpt_distilbert_att/`.
 """
 
 from transformers import AutoTokenizer
@@ -23,8 +23,8 @@ import pickle
 import argparse
 import os
 
-from data import IMDBdataset_att, topK_from_senti_dist_dict
-from litmodel import litDistillBERT
+from utils.data import IMDBdataset_att, topK_from_senti_dist_dict
+from utils.litmodel import litDistillBERT
 
 
 parser = argparse.ArgumentParser(
@@ -50,14 +50,14 @@ parser.add_argument(
     "-tv",
     "--threshold-value",
     type=float,
-    default=0.05,
+    default=0,
     help="Threshold absolute value to screen out high-attention tokens",
 )
 parser.add_argument(
     "-tp",
     "--threshold-proportion",
     type=float,
-    default=None,
+    default=0.02,
     help="Threshold proportions to screen out high-attention tokens",
 )
 parser.add_argument(
@@ -70,13 +70,13 @@ parser.add_argument(
 parser.add_argument(
     "--data_folder",
     type=str,
-    default="../data/",
+    default="./data/",
     help="Path to the data folder where imdb_reviews.csv, senti_dist_dict.pkl and att_mats_pooled.pt are stored",
 )
 parser.add_argument(
     "--ckpt_folder",
     type=str,
-    default="../ckpt/ckpt_distilbert_att/",
+    default="./ckpt/ckpt_distilbert_att/",
     help="Path to the checkpoint folder where the trained model will be saved",
 )
 
@@ -88,7 +88,11 @@ group.add_argument("-i", "--infer", action="store_true")
 args = parser.parse_args()
 
 
+
+
 # Set up file system and structure
+pretrained_model_name = "distilbert-base-uncased"
+
 data_dir = args.data_folder
 imdb_data_path = os.path.join(data_dir, "imdb_reviews.csv")
 senti_dist_path = os.path.join(data_dir, "senti_dist_dict.pkl")
@@ -103,8 +107,9 @@ device_list = args.device_ids
 
 word_list_keyword = None  # None (no maksing), 'W_pos_id', 'W_neg_id', 'W_others_id', or None (no masking)
 K = args.topk  # top K sentiment words will be used for masking
-pretrained_model_name = "distilbert-base-uncased"  # cased tokenization ("BAD" conveys more than "bad") # bert-based-uncased, bert-large-cased, bert-large-uncased
-
+print(
+    f"Masking sentiment keyword: {word_list_keyword}; top K: {K}; threshold_proportion: {threshold_proportion}"
+)
 
 word_list_keyword = args.mask_keyword
 temp = "none" if word_list_keyword is None else word_list_keyword.split("_")[1]
@@ -122,11 +127,11 @@ BATCH_SIZE = 16
 EPOCHS = 5
 LEARNING_RATE = 1e-5
 MAX_LEN = 512
-SEED = 2023
+# SEED = 2023
 
 
 if __name__ == "__main__":
-    seed_everything(SEED, workers=True)
+    # seed_everything(SEED, workers=True)
 
     tokenizer = AutoTokenizer.from_pretrained(pretrained_model_name)
 

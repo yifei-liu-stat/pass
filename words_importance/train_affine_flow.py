@@ -65,6 +65,7 @@ device_ids = args.device_ids
 pretrained_model_name = "distilbert-base-uncased"
 
 data_dir = "./data"
+result_dir = "./results"
 flow_ckpt_dir = "./ckpt/ckpt_affineflow"
 
 word_list_keyword = args.mask_keyword
@@ -124,7 +125,7 @@ lit_nfmodel = litNFAffine(
 
 
 tensorboard = pl.loggers.TensorBoardLogger(
-    save_dir="./results/tensorboard_logging_affine", name=ckpt_prefix
+    save_dir=os.path.join(result_dir, "tensorboard_logging_affine"), name=ckpt_prefix
 )
 
 flow_checkpoint_name = ckpt_prefix + "-flow-{train_loss:.2f}"

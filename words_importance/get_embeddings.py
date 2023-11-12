@@ -37,7 +37,7 @@ parser.add_argument(
     "-m",
     "--mask-keyword",
     type=str,
-    default="W_others_id",
+    default=None,
     choices=[None, "W_pos_id", "W_neg_id", "W_others_id"],
     help="Keyword for specifying the mask",
 )
