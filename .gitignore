@@ -18,4 +18,10 @@ words_importance/data/*.pkl
 words_importance/data/*.pt
 
 
+words_importance/ckpt/ckpt_distilbert_att/*
+
+**/__pycache__/**/*
+**/*.pyc
+
+
 

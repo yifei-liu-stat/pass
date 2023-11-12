@@ -1,23 +1,28 @@
-# Use attention weights to threshold/screen out the context
+"""
+Fine-tune DistilBERT to perform sentiment classification on IMDB review dataset with sentiment word masking. The following files are needed:
+- imdb_reviews.csv
+- senti_dist_dict.pkl
+- att_mats_pooled.pt
+which can all be obtained by running `python prepare.py` in the `words_importance` directory.
+"""
 
 from transformers import AutoTokenizer
 from transformers import AutoModelForSequenceClassification
 
-import pytorch_lightning as pl
 from pytorch_lightning import Trainer, seed_everything
 from pytorch_lightning.callbacks import ModelCheckpoint
 
 import torch
-import torch.nn.functional as F
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader
 
 import pandas as pd
 
-from tqdm import tqdm
-from copy import deepcopy
 import pickle
 import argparse
 import os
+
+from data import IMDBdataset_att, topK_from_senti_dist_dict
+from litmodel import litDistillBERT
 
 
 parser = argparse.ArgumentParser(
@@ -53,6 +58,26 @@ parser.add_argument(
     default=None,
     help="Threshold proportions to screen out high-attention tokens",
 )
+parser.add_argument(
+    "--device_ids",
+    type=int,
+    nargs="+",
+    default=[0, 1, 2, 3],
+    help="List of device IDs for multi-GPU training",
+)
+parser.add_argument(
+    "--data_folder",
+    type=str,
+    default="../data/",
+    help="Path to the data folder where imdb_reviews.csv, senti_dist_dict.pkl and att_mats_pooled.pt are stored",
+)
+parser.add_argument(
+    "--ckpt_folder",
+    type=str,
+    default="../ckpt/ckpt_distilbert_att/",
+    help="Path to the checkpoint folder where the trained model will be saved",
+)
+
 
 group = parser.add_mutually_exclusive_group()
 group.add_argument("-t", "--train", action="store_true")
@@ -61,38 +86,35 @@ group.add_argument("-i", "--infer", action="store_true")
 args = parser.parse_args()
 
 
-WORKING_DIRECTORY = "/home/liu00980/Documents/mvdp/nlp_task/imdb_distillbert/"
-DATA_PATH = "/home/liu00980/Documents/mvdp/nlp_task/data/imdb/"
-PLOT_PATH = "/home/liu00980/Documents/mvdp/nlp_task/pyplot.png"
-CHECKPOINT_FOLDER = (
-    "/home/liu00980/Documents/mvdp/nlp_task/checkpoints_distillbert_att/"
-)
-WORD_LIST_SAVE_PATH = "/home/liu00980/Documents/mvdp/nlp_task/data/imdb/"
-THRESHOLD_VALUE = (
-    args.threshold_value
-)  # absolute threshold value above which the attention weights will be eliminated
-THRESHOLD_PROPORTION = (
-    args.threshold_proportion
-)  # based on attention weights distribution, this proportion of weights (from above) will be eliminated
+# Set up file system and structure
+data_dir = args.data_folder
+imdb_data_path = os.path.join(data_dir, "imdb_reviews.csv")
+senti_dist_path = os.path.join(data_dir, "senti_dist_dict.pkl")
+att_mat_path = os.path.join(data_dir, "att_mats_pooled.pt")
 
 
-WORD_LIST_KEYWORD = None  # None (no maksing), 'W_pos_id', 'W_neg_id', 'W_others_id', or None (no masking)
+ckpt_dir = args.ckpt_folder
+threshold_value = args.threshold_value
+threshold_proportion = args.threshold_proportion
+
+device_list = args.device_ids
+
+word_list_keyword = None  # None (no maksing), 'W_pos_id', 'W_neg_id', 'W_others_id', or None (no masking)
 K = args.topk  # top K sentiment words will be used for masking
-PRE_TRAINED_MODEL_NAME = "distilbert-base-uncased"  # cased tokenization ("BAD" conveys more than "bad") # bert-based-uncased, bert-large-cased, bert-large-uncased
+pretrained_model_name = "distilbert-base-uncased"  # cased tokenization ("BAD" conveys more than "bad") # bert-based-uncased, bert-large-cased, bert-large-uncased
 
 
-WORD_LIST_KEYWORD = args.mask_keyword
-temp = "none" if WORD_LIST_KEYWORD is None else WORD_LIST_KEYWORD.split("_")[1]
-CHECKPOINT_NAME = "-".join(
+word_list_keyword = args.mask_keyword
+temp = "none" if word_list_keyword is None else word_list_keyword.split("_")[1]
+ckpt_name = "-".join(
     [
         "imdb-distillbert",
         temp,
         f"top{K}",
-        f"tv{100 * THRESHOLD_PROPORTION:0>3n}",
+        f"tv{100 * threshold_proportion:0>3n}",
         "{val_loss:.4f}",
     ]
 )
-
 
 BATCH_SIZE = 16
 EPOCHS = 5
@@ -104,23 +126,21 @@ SEED = 2023
 if __name__ == "__main__":
     seed_everything(SEED, workers=True)
 
-    tokenizer = AutoTokenizer.from_pretrained(PRE_TRAINED_MODEL_NAME)
+    tokenizer = AutoTokenizer.from_pretrained(pretrained_model_name)
 
     # use most sentiment words (according to corresponding sentiment classes) as topping criteria
-    senti_dist_dict = pickle.load(
-        open(WORD_LIST_SAVE_PATH + "senti_dist_dict.pkl", "rb")
-    )
+    senti_dist_dict = pickle.load(open(senti_dist_path, "rb"))
     word_lists = topK_from_senti_dist_dict(senti_dist_dict, K, tokenizer)
     word_list_ids = (
-        word_lists[WORD_LIST_KEYWORD] if WORD_LIST_KEYWORD is not None else None
+        word_lists[word_list_keyword] if word_list_keyword is not None else None
     )
 
-    df = pd.read_csv(DATA_PATH + "imdb_reviews.csv")
+    print("Loading IMDB dataset ...")
+    df = pd.read_csv(imdb_data_path)
     df["sentiment"] = df.sentiment.apply(lambda s: 0 if s == "negative" else 1)
 
-    att_mats_pooled = pickle.load(
-        open(DATA_PATH + "/att_mats_pooled.pkl", "rb")
-    )  # took some time to load, too large
+    print("Loading pooled attention matrices from BERT...")
+    att_mats_pooled = pickle.load(open(att_mat_path, "rb"))
     ds = IMDBdataset_att(
         reviews=df.review.to_numpy(),
         targets=df.sentiment.to_numpy(),
@@ -128,8 +148,8 @@ if __name__ == "__main__":
         max_len=MAX_LEN,
         att_mats=att_mats_pooled,
         word_list_ids=word_list_ids,
-        threshold_val=THRESHOLD_VALUE,
-        threshold_prop=THRESHOLD_PROPORTION,
+        threshold_val=threshold_value,
+        threshold_prop=threshold_proportion,
     )
 
     ds_train, ds_val, ds_inf = torch.utils.data.random_split(ds, [40000, 5000, 5000])
@@ -144,7 +164,7 @@ if __name__ == "__main__":
     )
 
     model = AutoModelForSequenceClassification.from_pretrained(
-        PRE_TRAINED_MODEL_NAME, num_labels=2, output_attentions=True
+        pretrained_model_name, num_labels=2, output_attentions=True
     )
     litmodel = litDistillBERT(model=model, lr=LEARNING_RATE)
 
@@ -153,19 +173,19 @@ if __name__ == "__main__":
             save_top_k=1,
             mode="min",
             monitor="val_loss",
-            dirpath=CHECKPOINT_FOLDER,
-            filename=CHECKPOINT_NAME,
+            dirpath=ckpt_dir,
+            filename=ckpt_name,
         )
 
         trainer = Trainer(
             max_epochs=EPOCHS,
             accelerator="gpu",
-            devices=[3, 5, 6, 7],
+            devices=device_list,
             strategy="ddp",
             precision="16",
             deterministic=True,
             callbacks=[checkpoint_callback],
-            default_root_dir=WORKING_DIRECTORY,
+            default_root_dir="./",
             logger=False,
         )
 
@@ -181,26 +201,18 @@ if __name__ == "__main__":
         )
 
         senti_keyword = (
-            "none" if WORD_LIST_KEYWORD is None else WORD_LIST_KEYWORD.split("_")[1]
+            "none" if word_list_keyword is None else word_list_keyword.split("_")[1]
         )
-        for checkpoint_name in os.listdir(CHECKPOINT_FOLDER):
+        for checkpoint_name in os.listdir(ckpt_dir):
             if (
                 checkpoint_name.__contains__(senti_keyword)
                 and checkpoint_name.__contains__(f"top{K}")
-                and checkpoint_name.__contains__(f"tv{100 * THRESHOLD_PROPORTION:0>3n}")
+                and checkpoint_name.__contains__(f"tv{100 * threshold_proportion:0>3n}")
             ):
                 break
 
         trainer.validate(
             model=litmodel,
             dataloaders=dl_inf,
-            ckpt_path=CHECKPOINT_FOLDER + checkpoint_name,
+            ckpt_path=ckpt_dir + checkpoint_name,
         )
-
-
-# # get some example words from the sentiment collections
-# temp_keyword = 'W_others_id'
-# temp_start = 50
-# temp_end = temp_start + 20
-# tokens = tokenizer.convert_ids_to_tokens(word_lists[temp_keyword])
-# ", ".join(tokens[temp_start:temp_end])
