@@ -1,5 +1,7 @@
 """
 Train an affine coupling flow for sentiment-masked text embeddings.
+- ./results/tensorboard_logging_affine/: training curves including callbacks for comparing synthetic embeddings and true embeddings
+- ./ckpt/ckpt_affineflow/: checkpoints for the flow model, followed by the naming convention of "imdb-distillbert-{mask_keyword}-top{topK}-tp{threshold_proportion}-train_loss...".
 """
 
 import pytorch_lightning as pl
@@ -122,10 +124,10 @@ lit_nfmodel = litNFAffine(
 
 
 tensorboard = pl.loggers.TensorBoardLogger(
-    save_dir="./tensorboard_logging_affine", name=ckpt_prefix
+    save_dir="./results/tensorboard_logging_affine", name=ckpt_prefix
 )
 
-flow_checkpoint_name = ckpt_prefix + "-flow-{train_loss:.2f}.ckpt"
+flow_checkpoint_name = ckpt_prefix + "-flow-{train_loss:.2f}"
 checkpoint_callback = ModelCheckpoint(
     save_top_k=1,
     mode="min",
