@@ -22,6 +22,8 @@ nltk = "3.7"
 pandas = "1.5.3"
 pytorch-lightning = "^2.1.1"
 seaborn = "^0.13.0"
+altair = "^5.1.2"
+tensorboard = "^2.15.1"
 
 
 

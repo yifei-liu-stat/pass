@@ -1,7 +1,9 @@
 import torch
 from torch.utils.data import Dataset, DataLoader
 
+import os
 from copy import deepcopy
+import pickle
 
 
 class IMDBdataset(Dataset):
@@ -113,6 +115,27 @@ class IMDBdataset_att(Dataset):
         }
 
 
+class IMDBembedding(Dataset):
+    """Prepare IMDB embedding dataset"""
+
+    def __init__(self, embeddings, sentiments, onehot=False):
+        self.embeddings = embeddings
+        self.sentiments = sentiments
+        self.onehot = onehot
+
+    def __len__(self):
+        return len(self.embeddings)
+
+    def __getitem__(self, idx):
+        x = self.embeddings[idx]
+        if self.onehot:
+            y = [1, 0] if self.sentiments[idx] else [0, 1]
+            y = torch.tensor(y, dtype=torch.float)
+        else:
+            y = torch.tensor(int(self.sentiments[idx]), dtype=torch.long)
+        return x, y
+
+
 def create_data_loader_imdb(df, tokenizer, max_len, batch_size):
     """Create dataloader from IMDB movie review dataset"""
     dataset = IMDBdataset(
@@ -145,3 +168,38 @@ def topK_from_senti_dist_dict(senti_dist_dict, K, tokenizer):
         topK_target_ids = tokenizer.convert_tokens_to_ids(topK_target_token_list)
         word_list_dict["_".join(["W", keyword.split("_")[0], "id"])] = topK_target_ids
     return word_list_dict
+
+
+def load_embd_idx(save_path):
+    """Load indices of embeddings that corresponding to training flow, training classifier and inference"""
+    flow_idx = pickle.load(open(os.path.join(save_path, "flow_idx.pkl"), "rb"))
+    cls_idx = pickle.load(open(os.path.join(save_path, "cls_idx.pkl"), "rb"))
+    inf_idx = pickle.load(open(os.path.join(save_path, "inf_idx.pkl"), "rb"))
+    return flow_idx, cls_idx, inf_idx
+
+
+def process_distillbert_embedding(save_path):
+    """Process distillbert embeddings."""
+    predicts = []
+    indices = []
+    for f in os.listdir(save_path):
+        if f.startswith("predictions"):
+            predicts.append(torch.load(os.path.join(save_path, f)))
+        if f.startswith("batch_indices"):
+            indices.append(torch.load(os.path.join(save_path, f)))
+
+    embeddings, targets, idxs = [], [], []
+    for process_idx in range(len(predicts)):
+        temp = predicts[process_idx]
+        embeddings.extend([temp[i][0] for i in range(len(temp))])
+        targets.extend([temp[i][1] for i in range(len(temp))])
+
+        temp_idx = indices[process_idx][0]
+        idxs.extend(
+            [torch.tensor(temp_idx[i], dtype=torch.int) for i in range(len(temp_idx))]
+        )
+
+    embeddings = torch.cat(embeddings, dim=0)
+    targets = torch.cat(targets, dim=0)
+    idxs = torch.cat(idxs, dim=0)
+    return embeddings, targets, idxs

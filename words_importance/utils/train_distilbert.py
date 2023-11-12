@@ -4,6 +4,8 @@ Fine-tune DistilBERT to perform sentiment classification on IMDB review dataset 
 - senti_dist_dict.pkl
 - att_mats_pooled.pt
 which can all be obtained by running `python prepare.py` in the `words_importance` directory.
+
+Checkpoints will be saved in specified checkpoint folder.
 """
 
 from transformers import AutoTokenizer
@@ -111,7 +113,7 @@ ckpt_name = "-".join(
         "imdb-distillbert",
         temp,
         f"top{K}",
-        f"tv{100 * threshold_proportion:0>3n}",
+        f"tp{100 * threshold_proportion:0>3n}",
         "{val_loss:.4f}",
     ]
 )
@@ -207,7 +209,7 @@ if __name__ == "__main__":
             if (
                 checkpoint_name.__contains__(senti_keyword)
                 and checkpoint_name.__contains__(f"top{K}")
-                and checkpoint_name.__contains__(f"tv{100 * threshold_proportion:0>3n}")
+                and checkpoint_name.__contains__(f"tp{100 * threshold_proportion:0>3n}")
             ):
                 break
 
