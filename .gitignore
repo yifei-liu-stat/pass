@@ -11,6 +11,9 @@ assess_generators/denoising-diffusion-pytorch/**/*
 
 
 multimodal_inference/data/**/*
+multimodal_inference/results/**/*.png
+
+
 
 
 words_importance/data/*.csv

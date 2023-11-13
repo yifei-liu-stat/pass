@@ -35,15 +35,15 @@ if not os.path.exists(data_dir):
 
 # 1. Download IMDB review dataset
 imdb_data_path = os.path.join(data_dir, "imdb_reviews.csv")
-if not os.path.exists(imdb_data_path):
-    print("Downloading IMDB review dataset ...")
+# if not os.path.exists(imdb_data_path):
+#     print("Downloading IMDB review dataset ...")
 
-    url = "https://drive.google.com/file/d/188kXbMMJdP26A4_b_aH_iXHNoB45DZmW/view?usp=drive_link"
-    gdown.download(url, quiet=False, output=imdb_data_path, fuzzy=True)
+#     url = "https://drive.google.com/file/d/188kXbMMJdP26A4_b_aH_iXHNoB45DZmW/view?usp=drive_link"
+#     gdown.download(url, quiet=False, output=imdb_data_path, fuzzy=True)
 
-    print("Download finished.")
-else:
-    print(f"IMDB review dataset already exists in path {imdb_data_path}.")
+#     print("Download finished.")
+# else:
+#     print(f"IMDB review dataset already exists in path {imdb_data_path}.")
 
 
 df = pd.read_csv(imdb_data_path)

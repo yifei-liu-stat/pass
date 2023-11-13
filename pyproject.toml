@@ -2,7 +2,7 @@
 name = "pass"
 version = "0.1.0"
 description = "Code repo for \"PASS: Perturbation Assisted Sample Synthesis --- A Novel Approach For Uncertainty Quantification\""
-authors = ["Yifei Liu <liu00980@umn.edu>"]
+authors = ["Yifei Liu <liu00980@umn.edu>", "Rex Shen <rshen0@stanford.edu>", "Xiaotong Shen <xshen@umn.edu >"]
 license = "MIT"
 readme = "README.md"
 

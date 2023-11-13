@@ -266,7 +266,7 @@ for i, (dist, ax) in enumerate(zip([pos, neg, others], axs)):
     
 
     # Add title and axis labels
-    ax.set_xlabel('Test statistic')
+    ax.set_xlabel(f'Test statistic ({subtitles[i]})')
     ax.set_ylabel('Density')
 
 

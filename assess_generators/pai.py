@@ -37,16 +37,16 @@ fake_img_dir = "./results/fake_images/"
 if not os.path.exists(fake_img_dir):
     os.makedirs(fake_img_dir)
 
-# Retrieve checkpoints from Google Drive if not exist
-if not os.path.exists("./ckpt"):
-    print("Downloading checkpoints ...")
+# # Retrieve checkpoints from Google Drive if not exist
+# if not os.path.exists("./ckpt"):
+#     print("Downloading checkpoints ...")
 
-    url = "https://drive.google.com/drive/folders/1jrOyIxNsc4Wtdsv3LcJXLb8pF-VVBt6X?usp=drive_link"
-    gdown.download_folder(url, quiet=False, use_cookies=False)
+#     url = "https://drive.google.com/drive/folders/1jrOyIxNsc4Wtdsv3LcJXLb8pF-VVBt6X?usp=drive_link"
+#     gdown.download_folder(url, quiet=False, use_cookies=False)
 
-    print("Download finished.")
-else:
-    print("Checkpoints already exist.")
+#     print("Download finished.")
+# else:
+#     print("Checkpoints already exist.")
 
 cuda_device_id = 0
 cuda_device = f"cuda:{cuda_device_id}"
@@ -72,7 +72,9 @@ fake_imgs_dcgan = generator_dcgan(torch.randn((25, 1024, 1, 1), dtype=torch.floa
 grid = torchvision.utils.make_grid(
     fake_imgs_dcgan, nrow=5, normalize=True, value_range=(-1, 1)
 )
-show(grid, os.path.join(fake_img_dir, "dcgan.png"))
+img_path = os.path.join(fake_img_dir, "dcgan.png")
+show(grid, img_path)
+print(f"Sample synthetic images saved in {img_path}")
 
 
 ## Uncertainty quantification on generation quality of DCGAN
@@ -113,8 +115,9 @@ fake_imgs_glow = generate_glow(generator_glow, 25)
 grid = torchvision.utils.make_grid(
     fake_imgs_glow, nrow=5, normalize=True, value_range=(-1, 1)
 )
-show(grid, os.path.join(fake_img_dir, "glow.png"))
-
+img_path = os.path.join(fake_img_dir, "glow.png")
+show(grid, img_path)
+print(f"Sample synthetic images saved in {img_path}")
 
 ## Uncertainty quantification on generation quality of GLOW
 res_glow = []
@@ -157,7 +160,9 @@ fake_imgs_ddpm = 2 * fake_imgs_ddpm - 1
 grid = torchvision.utils.make_grid(
     fake_imgs_ddpm, nrow=5, normalize=True, value_range=(-1, 1)
 )
-show(grid, os.path.join(fake_img_dir, "ddpm.png"))
+img_path = os.path.join(fake_img_dir, "ddpm.png")
+show(grid, img_path)
+print(f"Sample synthetic images saved in {img_path}")
 
 
 res_ddpm = []

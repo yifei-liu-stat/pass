@@ -1,57 +1,54 @@
-pass
-==============================
+# PASS: Perturbation-Assisted Sample Synthesis
+[Arxiv](https://arxiv.org/abs/2305.18671) | [BibTex](#bibtex)
 
-Code repo for "PASS: Perturbation Assisted Sample Synthesis --- A Novel Approach For Uncertainty Quantification"
-
-Project Organization
-------------
-
-    ├── LICENSE
-    ├── Makefile           <- Makefile with commands like `make data` or `make train`
-    ├── README.md          <- The top-level README for developers using this project.
-    ├── data
-    │   ├── external       <- Data from third party sources.
-    │   ├── interim        <- Intermediate data that has been transformed.
-    │   ├── processed      <- The final, canonical data sets for modeling.
-    │   └── raw            <- The original, immutable data dump.
-    │
-    ├── docs               <- A default Sphinx project; see sphinx-doc.org for details
-    │
-    ├── models             <- Trained and serialized models, model predictions, or model summaries
-    │
-    ├── notebooks          <- Jupyter notebooks. Naming convention is a number (for ordering),
-    │                         the creator's initials, and a short `-` delimited description, e.g.
-    │                         `1.0-jqp-initial-data-exploration`.
-    │
-    ├── references         <- Data dictionaries, manuals, and all other explanatory materials.
-    │
-    ├── reports            <- Generated analysis as HTML, PDF, LaTeX, etc.
-    │   └── figures        <- Generated graphics and figures to be used in reporting
-    │
-    ├── requirements.txt   <- The requirements file for reproducing the analysis environment, e.g.
-    │                         generated with `pip freeze > requirements.txt`
-    │
-    ├── setup.py           <- makes project pip installable (pip install -e .) so src can be imported
-    ├── src                <- Source code for use in this project.
-    │   ├── __init__.py    <- Makes src a Python module
-    │   │
-    │   ├── data           <- Scripts to download or generate data
-    │   │   └── make_dataset.py
-    │   │
-    │   ├── features       <- Scripts to turn raw data into features for modeling
-    │   │   └── build_features.py
-    │   │
-    │   ├── models         <- Scripts to train models and then use trained models to make
-    │   │   │                 predictions
-    │   │   ├── predict_model.py
-    │   │   └── train_model.py
-    │   │
-    │   └── visualization  <- Scripts to create exploratory and results oriented visualizations
-    │       └── visualize.py
-    │
-    └── tox.ini            <- tox file with settings for running tox; see tox.readthedocs.io
+Code repo for "PASS: Perturbation Assisted Sample Synthesis --- A Novel Approach For Uncertainty Quantification" (Y Liu, R Shen, X Shen).
 
 
---------
+<p align="center">
+<img src=reports/figures/flowchart_pass_v2.png />
+</p>
 
-<p><small>Project based on the <a target="_blank" href="https://drivendata.github.io/cookiecutter-data-science/">cookiecutter data science project template</a>. #cookiecutterdatascience</small></p>
+PASS is a generalization to proposed methods in [Shen et al., 2022](https://hdsr.mitpress.mit.edu/pub/x1ozqj10/release/3) and [Bi and Shen, 2023](https://arxiv.org/abs/2111.05791), and it comes with the following benefits:
+
+1. Estimation of a transport map $G$ to push base distribution $F_{\boldsymbol U}$ to a target distribution $\tilde F_{\boldsymbol Z}$ (supposely close to $F_{\boldsymbol Z}$) on an independent holdout sample;
+2. Personalized inference with rank matching;
+3. Distribution-preserving perturbation for sampling diversity and privacy protection.
+
+Moreover, sampling properties of PASS generator make sure that it can be used for simulation-based inference, or Monte Carlo (MC) inference.
+This repo focuses on the MC inference examples provided in the paper.
+
+## Experiment
+
+```
+git clone https://github.com/yifei-liu-stat/pass.git
+
+```
+
+### Assess Image Generators
+Test the generation quality of image generative models on CIFAR-10 with FID score as the test statistic.
+MC inference allows us to quantify the uncertainty in FID calculation when inference sample size is limited.
+
+<p align="center">
+<img src=reports/figures/compare-images.png />
+</p>
+(E.g. Generator B has a slightly smaller FID than A does, but the test shows it is not statistically significant)
+
+
+
+
+### Word Importance in Sentiment Analysis
+
+### Multimodal Inference
+
+
+## BibTex
+
+```
+@article{liu2023perturbation,
+  title={Perturbation-Assisted Sample Synthesis: A Novel Approach for Uncertainty Quantification},
+  author={Liu, Yifei and Shen, Rex and Shen, Xiaotong},
+  journal={arXiv preprint arXiv:2305.18671},
+  year={2023},
+  url={https://arxiv.org/abs/2305.18671}
+}
+```

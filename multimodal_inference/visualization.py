@@ -42,6 +42,6 @@ for i in range(len(axes)):
 fig.subplots_adjust(wspace=0.22)
 # fig.tight_layout()
 plt.savefig(PLOT_PATH)
-print(f"Saved plot to {PLOT_PATH}")
+print(f"Visual comparison of generated images from different prompts saved to {PLOT_PATH}")
 
 plt.close()
