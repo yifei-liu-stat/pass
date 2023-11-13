@@ -1,10 +1,12 @@
-###############################################
-# Create environment and install dependencies #
-###############################################
-create_environment:
-	conda env create -f environment.yml
-	conda activate pass
-	poetry install
+.ONESHELL:
+
+# ###############################################
+# # Create environment and install dependencies #
+# ###############################################
+# create_environment:
+# 	conda env create -f environment.yml
+# 	source activate pass
+# 	poetry install --no-root
 
 
 ############################################################
@@ -33,11 +35,10 @@ data_words_importance:
 	@echo ">>> Preparing sentiment word lists and pooled attention weights"
 	python prepare.py
 	
-	[TO BE MODIFIED!]
 	@echo ">>> Downloading checkpoints for DistilBERT with positive/negative/netrual sentiment masking ..."
-	gdown <shared-link-to-some-folder-distilbert> -O ./ckpt/ --folder
+	gdown https://drive.google.com/drive/folders/1d_dYFOPwb0fbF4mEYYLwAl4XypLo3kbM?usp=drive_link -O ./ckpt/ --folder
 	@echo ">>> Downloading checkpoints for affine coupling flow with positive/negative/netrual sentiment masking ..."
-	gdown <shared-link-to-some-folder-realnvp> -O ./ckpt/ --folder
+	gdown https://drive.google.com/drive/folders/1Sm60REyJmjaYtow78L3XxfM9QSJ7qCSN?usp=drive_link -O ./ckpt/ --folder
 	
 	@echo ">>> Downloading imdb embeddings with negative-sentiment-masking (neg) ..."
 	gdown https://drive.google.com/drive/folders/13Ol-Q69Hnltp8__bmIY8HrU7jM8wftXU?usp=drive_link -O ./data/ --folder
@@ -58,8 +59,11 @@ data_words_importance:
 # Inference with prepared ckpts and null distribution #
 #######################################################
 inf_assess_generators:
-	cd multimodal_inference
+	cd assess_generators
+	
 	python pai.py
+	python visualization.py
+	
 	cd ..
 
 
