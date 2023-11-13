@@ -1,29 +1,28 @@
 
+# example: assess_generators
 assess_generators/ckpt/**/*
 assess_generators/data/*
 
-# assess_generators/results/**/*.png
-# assess_generators/results/competitor_pvalue_dict.pkl
-# assess_generators/results/competitor_score_dict.pkl
+assess_generators/results/**/*.png
+assess_generators/results/competitor*.pkl
 
 assess_generators/denoising-diffusion-pytorch/**/*
 
 
-
+# example: multimodal_inference
 multimodal_inference/data/**/*
 multimodal_inference/results/**/*.png
 
 
-
-
+# example: words_importance
 words_importance/data/*.csv
 words_importance/data/*.pkl
 words_importance/data/*.pt
-# sentiment-masked embeddings
+## sentiment-masked embeddings
 words_importance/data/imdb-distillbert*/*.pt
 
 
-# sentiment-masked ckpt of DistilBERT
+## sentiment-masked ckpt of DistilBERT
 words_importance/ckpt/ckpt_distilbert_att/*
 # checkpoints of affined coupling flow on embeddings
 words_importance/ckpt/ckpt_affineflow/*
@@ -31,8 +30,11 @@ words_importance/ckpt/ckpt_affineflow/*
 
 words_importance/results/plots/*.png
 
+# others
 **/__pycache__/**/*
 **/*.pyc
 
 
 
+# exceptions
+!**/.gitkeep

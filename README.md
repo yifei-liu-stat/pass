@@ -96,6 +96,7 @@ To perform the inference:
 - The MC inference implementation here is a simplified version of PAI presented in the paper, without rank matching and perturbation.
 This is equivalent (in terms of inference resutls) to using rank matching and perturbation due to the nice sampling properties of PASS (Lemma 1 of the paper).
 - However, for personalized inference, it is crutial to use rank matching for personalized inference, and perturbation for diversity and privacy protection, so relevant utils is provided in this repo as well (WIP).
+- Scripts for obtaining model checkpoints and estimated null distributions are also included in the repo.
 
 ## BibTex
 
