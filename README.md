@@ -10,11 +10,11 @@ Code repo for "PASS: Perturbation Assisted Sample Synthesis --- A Novel Approach
 
 PASS is a generalization to proposed methods in [Shen et al., 2022](https://hdsr.mitpress.mit.edu/pub/x1ozqj10/release/3) and [Bi and Shen, 2023](https://arxiv.org/abs/2111.05791), and it comes with the following benefits:
 
-1. Estimation of a transport map $G$ to push base distribution $F_{\boldsymbol U}$ to a target distribution $\tilde F_{\boldsymbol Z}$ (supposely close to $F_{\boldsymbol Z}$) on an independent holdout sample;
+1. Estimation of a transport map $G$ to push base distribution $F_{\boldsymbol U}$ to a target distribution $\tilde F_{\boldsymbol Z}$ (supposedly close to $F_{\boldsymbol Z}$) on an independent holdout sample;
 2. Personalized inference with rank matching;
 3. Distribution-preserving perturbation for sampling diversity and privacy protection.
 
-Moreover, sampling properties of PASS generator make sure that it can be used for simulation-based inference, or Monte Carlo (MC) inference.
+Moreover, the sampling properties of PASS generator make sure that it can be used for simulation-based inference, or Monte Carlo (MC) inference.
 This repo focuses on the MC inference examples provided in the paper.
 
 ## Experiment
@@ -33,7 +33,7 @@ poetry install --no-root
 
 ### Assess Image Generators
 Test the generation quality of image generative models on CIFAR-10 with FID score as the test statistic.
-MC inference allows us to quantify the uncertainty in FID calculation when inference sample size is limited.
+MC inference allows us to quantify the uncertainty in FID calculation when the inference sample size is limited.
 
 <p align="center">
 <img src=reports/figures/compare-images.png />
@@ -53,8 +53,8 @@ To perform inference on this example,
 
 
 ### Word Importance in Sentiment Analysis
-Test importance of sentiment (positive/negative/neutral) words in the IMDB review sentiment classification task, utilizing MC inference.
-This example features statistical inference with unstructured data (text) and blackbox models (neural networks), which is challenging with traditional statistical inference methods.
+Test the importance of sentiment (positive/negative/neutral) words in the IMDB review sentiment classification task, utilizing MC inference.
+This example features statistical inference with unstructured data (text) and black-box models (neural networks), which is challenging with traditional statistical inference methods.
 
 <p align="center">
 <img src=reports/figures/sentiment_example.png />
@@ -64,7 +64,7 @@ This example features statistical inference with unstructured data (text) and bl
 To perform inference on this example:
 
 1. Run `make data_words_importance` to download data/checkpoints and prepare some artifacts.
-    - Datasets, sentiment word list (along with their appearance frequency in the data), sentiment-masked embeddings will be saved in `./words_importance/data/`.
+    - Datasets, sentiment word lists (along with their appearance frequency in the data), and sentiment-masked embeddings will be saved in `./words_importance/data/`.
     - Checkpoints will all be saved to `./words_importance/ckpt/`.
 2. Run  `make inf_words_importance` to perform inference.
     - The inference results (test statistic, p-value) will be printed out.
@@ -88,14 +88,13 @@ To perform the inference:
 1. Run `make data_multimodal` to generate images from prompts for comparison.
     - Generated images will be saved to `./multimodal_inference/data/`.
 2. Run `make inf_multimodal` to perform the inference.
-    - The inference results (the pair of prompts to be compared, cosine simularity, test statistic and P-value) will be printed out.
+    - The inference results (the pair of prompts to be compared, cosine similarity, test statistic, and P-value) will be printed out.
     - Synthetic images generated from stable diffusion with different prompts will be displayed in `./multimodal_inference/results/prompt_images.png`.
 
 
 ## Comments
-- The MC inference implementation here is a simplified version of PAI presented in the paper, without rank matching and perturbation.
-This is equivalent (in terms of inference resutls) to using rank matching and perturbation due to the nice sampling properties of PASS (Lemma 1 of the paper).
-- However, for personalized inference, it is crutial to use rank matching for personalized inference, and perturbation for diversity and privacy protection, so relevant utils is provided in this repo as well (WIP).
+- The MC inference implementation here is a simplified version of PAI presented in the paper, following the nice sampling properties of PASS (Lemma 1 of the paper).
+- PASS involves rank matching for personalized inference and perturbation for diversity and privacy protection. Relevant utils are provided in this repo as well (WIP).
 - Scripts for obtaining model checkpoints and estimated null distributions are also included in the repo.
 
 ## BibTex
